@@ -1,19 +1,32 @@
 # Azapret FastApp
 
+[![Windows](https://img.shields.io/badge/Windows-10%2F11-blue)](#-быстрый-старт)
+[![Язык](https://img.shields.io/badge/язык-русский-green)](#azapret-fastapp)
+[![Public Beta](https://img.shields.io/badge/Public%20Beta-1.0-orange)](release/AzapretApp-Public.zip)
+[![Скачать ZIP](https://img.shields.io/badge/скачать-AzapretApp--Public.zip-brightgreen)](release/AzapretApp-Public.zip)
+
 Удобный Windows-лаунчер для Discord, YouTube, Instagram, Facebook, Telegram и других сайтов.
 
 Azapret FastApp сделан для русскоязычных пользователей, которым нужен простой запуск без ручной работы с `.bat`, консолью и службами Windows.
 
 Сценарий простой: скачали архив, распаковали, запустили `Azapret.exe`, нажали `Проверка сети`, выбрали подходящий обход и нажали `Старт` или `Автостарт`.
 
+Если приложение помогло, поставьте ⭐ репозиторию. Так проект увидит больше людей.
+
 ![Главный экран](assets/screenshots/01-dropdown.jpg)
 
 ## 📥 Скачать
 
-Готовый архив находится здесь:
+Готовый архив можно скачать прямо из репозитория:
 
 ```text
 release/AzapretApp-Public.zip
+```
+
+Прямая ссылка:
+
+```text
+https://github.com/Wizzyart/Azapret-dis-Inst-facebook-youtube-fastapp/raw/main/release/AzapretApp-Public.zip
 ```
 
 Рекомендуемый путь распаковки:
@@ -87,6 +100,19 @@ Azapret.exe
 - Фикс Instagram/Facebook через hosts.
 - Вкладка Telegram с proxy-инструкциями.
 - Русский, English, 中文, فارسی интерфейс.
+
+## Поддерживаемые Направления
+
+Сборка ориентирована на быстрый запуск обхода для популярных сервисов и пользовательских доменов:
+
+- Discord
+- YouTube
+- Telegram
+- Instagram
+- Facebook
+- Geonix
+- Hero SMS
+- другие сайты из пользовательского списка `list-general-user.txt`
 
 ## Старт И Автостарт
 
