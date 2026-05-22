@@ -1,4 +1,4 @@
-# Azapret Discord YouTube FastApp
+# Azapret Discord YouTube Instagram Facebook FastApp
 
 Public Windows launcher for fast selection, testing, and autostart setup of zapret-based Discord/YouTube bypass profiles.
 
