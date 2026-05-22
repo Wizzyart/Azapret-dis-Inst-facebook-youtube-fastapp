@@ -1,130 +1,205 @@
 # Azapret Discord YouTube Instagram Facebook FastApp
 
-Public Windows launcher for fast selection, testing, and autostart setup of zapret-based Discord/YouTube bypass profiles.
+Удобный Windows-лаунчер для быстрого запуска zapret-профилей обхода Discord, YouTube, Telegram и других сайтов.
 
-The app is designed for non-technical users: choose a profile, run a network check, press Start or Autostart, and use the built-in service tools when needed.
+Проект сделан для русскоязычных пользователей, которым не хочется вручную запускать `.bat`, выбирать профили, читать консоль и разбираться со службами Windows. Запустил приложение, нажал `Проверка сети`, выбрал подходящий обход и нажал `Старт` или `Автостарт`.
 
-![Main screen](assets/screenshots/01-dropdown.jpg)
+![Главный экран](assets/screenshots/01-dropdown.jpg)
 
-## Features
+## Скачать
 
-- Public launcher with clean Windows UI.
-- One-click profile selection from bundled `general*.bat` bypasses.
-- Network check with logging and recommended profile selection.
-- Manual `Start` / `Stop` flow.
-- Windows autostart via `zapret` service.
-- `STOP ALL` to stop `winws.exe`, remove services, and flush DNS.
-- Restart selected bypass without reopening the app.
-- Game filter modes: Off, TCP + UDP, TCP only, UDP only.
-- IPSet filter status modes: Loaded, None, Any.
-- IPSet list updater.
-- Instagram/Facebook hosts fix action.
-- Telegram proxy page with guide screenshots.
-- Multi-language UI: Russian, English, Chinese, Persian.
-- Release ZIP is clean: no runtime logs, local settings, diagnostics, or test scripts.
-
-## Download
-
-Use the prebuilt archive:
+Готовый архив находится здесь:
 
 ```text
 release/AzapretApp-Public.zip
 ```
 
-Extract the ZIP before running. Do not run the app directly from inside the archive.
-
-Recommended location:
+Рекомендуемый путь распаковки:
 
 ```text
 C:\AzapretApp-Public
 ```
 
-Then run:
+После распаковки запускайте:
 
 ```text
 Azapret.exe
 ```
 
-## Quick Start
+Не запускайте приложение прямо из ZIP-архива. Сначала полностью распакуйте папку.
 
-1. Extract `AzapretApp-Public.zip`.
-2. Run `Azapret.exe`.
-3. Press `Проверка сети` / `Network Check`.
-4. Select the recommended profile or choose one manually.
-5. Press `Старт` / `Start` for manual launch.
-6. Press `Автостарт` / `Autostart` to install the selected profile as a Windows service.
+## Важно Про Антивирус
 
-![Network check button](assets/screenshots/02-network-check-button.png)
+Антивирус или SmartScreen может ругаться на архив, `winws.exe`, `WinDivert64.sys`, `.bat` или `.ps1` файлы.
 
-![Network check running](assets/screenshots/03-network-check-running.png)
+Это ожидаемо для подобных инструментов, потому что приложение:
 
-![Network check finished](assets/screenshots/04-network-check-finished.png)
+- запускает сетевой драйвер WinDivert;
+- создаёт службу Windows `zapret` для автостарта;
+- запускает `.bat` профили обхода;
+- меняет сетевые параметры только по нажатию пользователя;
+- может обновлять IPSet/hosts-файлы через встроенные кнопки.
 
-## Start And Autostart
+Если Windows заблокировал запуск:
 
-Manual `Start` launches the selected `.bat` profile for the current session.
+1. Распакуйте архив в простую папку, например `C:\AzapretApp-Public`.
+2. Нажмите правой кнопкой на ZIP или EXE, если есть кнопка `Разблокировать` в свойствах, включите её.
+3. Добавьте папку приложения в исключения антивируса, если доверяете сборке.
+4. Запускайте `Azapret.exe` из распакованной папки.
+5. Для `Автостарт` подтвердите окно UAC от Windows.
 
-`Autostart` installs the selected profile as the Windows `zapret` service so it starts with Windows. The launcher verifies that the service is really running before showing success.
+Если вы не доверяете сборке, не запускайте её. Это нормальное правило для любых сетевых инструментов.
 
-![Start and stop](assets/screenshots/05-start-stop.png)
+## Быстрый Старт
 
-![Autostart log](assets/screenshots/06-autostart-log.png)
+1. Скачайте `AzapretApp-Public.zip`.
+2. Полностью распакуйте архив.
+3. Запустите `Azapret.exe`.
+4. Нажмите `Проверка сети`.
+5. Дождитесь рекомендации в журнале.
+6. Нажмите `Старт` для ручного запуска или `Автостарт` для запуска вместе с Windows.
 
-If autostart fails, check:
+![Кнопка проверки сети](assets/screenshots/02-network-check-button.png)
+
+Во время проверки можно остановить процесс кнопкой `Стоп проверка`.
+
+![Проверка сети запущена](assets/screenshots/03-network-check-running.png)
+
+После завершения лаунчер покажет результат в журнале.
+
+![Проверка сети завершена](assets/screenshots/04-network-check-finished.png)
+
+## Что Умеет
+
+- Подбор и запуск профилей `general*.bat`.
+- Быстрая и полная проверка сети.
+- Ручной запуск через `Старт`.
+- Остановка выбранного обхода через `Стоп`.
+- Установка автостарта через службу Windows `zapret`.
+- Проверка, что служба реально запустилась.
+- `СТОП ВСЕ` для остановки `winws.exe`, удаления служб и очистки DNS.
+- Перезапуск выбранного обхода.
+- Игровой фильтр TCP/UDP.
+- IPSet фильтр с понятным статусом `Loaded`, `None`, `Any`.
+- Обновление IPSet списка.
+- Фикс Instagram/Facebook через hosts.
+- Вкладка Telegram с proxy-инструкциями.
+- Русский, English, 中文, فارسی интерфейс.
+
+## Старт И Автостарт
+
+`Старт` запускает выбранный `.bat` профиль вручную. Это удобно для проверки и временного запуска.
+
+![Старт и стоп](assets/screenshots/05-start-stop.png)
+
+`Автостарт` устанавливает выбранный обход как службу Windows `zapret`. После этого обход будет запускаться вместе с Windows, приложение каждый раз открывать не нужно.
+
+![Автостарт](assets/screenshots/06-autostart-log.png)
+
+Если автостарт не установился, проверьте:
 
 ```text
 app\runtime\service-actions.log
 ```
 
-Also make sure the Windows UAC prompt was accepted.
+Если в `app\runtime` появился файл `azapret-service-install-*.cmd`, запустите его правой кнопкой `Запуск от имени администратора`. Так будет видно реальную ошибку Windows или службы.
 
-## Service Tools
+## Службы И Обслуживание
 
-The service page contains maintenance actions for common cases.
+### СТОП ВСЕ
 
-![Stop all](assets/screenshots/07-stop-all-log.png)
+Кнопка `СТОП ВСЕ` останавливает `winws.exe`, удаляет службы `zapret`, `WinDivert`, `WinDivert14` и очищает DNS-кеш.
 
-![Restart bypass](assets/screenshots/08-restart-bypass.png)
+Используйте её, если обход завис, выбран неправильный профиль или нужно полностью выключить изменения.
 
-### Game Filter
+![СТОП ВСЕ](assets/screenshots/07-stop-all-log.png)
 
-Use the game filter when games, launchers, voice chat, or matchmaking require additional TCP/UDP handling.
+### Перезапустить Обход
 
-![Game filter](assets/screenshots/09-game-filter.png)
+Перезапускает выбранный профиль без ручного закрытия приложения.
 
-### IPSet Filter
+![Перезапуск обхода](assets/screenshots/08-restart-bypass.png)
 
-The IPSet filter has three modes:
+### Игровой Фильтр
 
-- `Loaded`: normal mode, uses `lists/ipset-all.txt`.
-- `None`: effectively disabled, uses only the reserved `203.0.113.113/32` entry.
-- `Any`: empty list mode, applies IPSet rules broadly.
+Игровой фильтр меняет диапазоны TCP/UDP портов для игр, лаунчеров, голосового чата и матчмейкинга.
 
-![IPSet filter](assets/screenshots/10-ipset-filter.png)
+Режимы:
 
-### IPSet Update And Hosts Fix
+- `Off` - выключить игровой фильтр.
+- `TCP + UDP` - максимальный охват.
+- `TCP only` - если нужен логин, лаунчер или TCP-соединения.
+- `UDP only` - если нужен игровой трафик, голос или матчмейкинг.
 
-Use `Обновить список IPSet` / `Update IPSet List` to refresh the bundled IP list.
+![Игровой фильтр](assets/screenshots/09-game-filter.png)
 
-Use the Instagram/Facebook hosts fix if those domains need DNS assistance on your network.
+### IPSet Фильтр
 
-![IPSet update and hosts fix](assets/screenshots/11-ipset-update-instagram-facebook.png)
+IPSet фильтр переключает режим списка IP-сетей.
 
-## Telegram Page
+- `Loaded` - обычный режим, используется `lists/ipset-all.txt`.
+- `None` - фактически выключено, используется только `203.0.113.113/32`.
+- `Any` - пустой список, IPSet-правила применяются максимально широко.
 
-The Telegram page helps open proxy settings, view proxy channel instructions, and download Telegram Desktop.
+![IPSet фильтр](assets/screenshots/10-ipset-filter.png)
 
-![Telegram page](assets/screenshots/12-telegram-page.png)
+### Обновить IPSet И Фикс Instagram/Facebook
 
-## Settings And Languages
+Кнопка `Обновить список IPSet` скачивает свежий список IPSet.
 
-![Settings](assets/screenshots/13-settings-page.png)
+Кнопка фикса Instagram/Facebook применяет hosts-записи для случаев, когда DNS мешает открытию этих сервисов.
 
-![Languages](assets/screenshots/14-languages-page.png)
+![IPSet и hosts fix](assets/screenshots/11-ipset-update-instagram-facebook.png)
 
-## Included User Domains
+## Telegram
 
-The Public user list includes additional domains requested for bypass profiles:
+Вкладка `Телеграм` помогает открыть MTProto proxy, канал с proxy и страницу загрузки Telegram Desktop.
+
+![Телеграм](assets/screenshots/12-telegram-page.png)
+
+## Настройки И Языки
+
+Во вкладке настроек можно менять поведение приложения и внешний вид.
+
+![Настройки](assets/screenshots/13-settings-page.png)
+
+Вкладка языков переключает интерфейс.
+
+![Языки](assets/screenshots/14-languages-page.png)
+
+## Частые Вопросы
+
+### Нужны ли права администратора?
+
+Для ручного `Старт` и особенно для `Автостарт` нужны права администратора, потому что используется WinDivert и создаётся служба Windows.
+
+### Почему ручной Старт работает, а Автостарт нет?
+
+Это разные механизмы. `Старт` запускает `.bat`, а `Автостарт` создаёт службу `zapret`. Если Windows блокирует UAC, службу, `cmd.exe` или антивирус мешает записи в папку, автостарт может не установиться.
+
+Проверьте:
+
+```text
+app\runtime\service-actions.log
+```
+
+### Что делать, если браузер был открыт до запуска обхода?
+
+Обновите страницу или перезапустите браузер. Иногда старые соединения остаются открытыми до перезагрузки вкладки.
+
+### Что делать, если всё сломалось?
+
+Нажмите `СТОП ВСЕ`, дождитесь записи в журнале, затем выберите другой профиль и нажмите `Старт`.
+
+### Можно ли добавлять свои сайты?
+
+В Public версии список можно редактировать вручную:
+
+```text
+AzapretApp-Public\app\lists\list-general-user.txt
+```
+
+В этой сборке уже добавлены:
 
 ```text
 geonix.com
@@ -133,38 +208,24 @@ hero-sms.com
 www.hero-sms.com
 ```
 
-## Troubleshooting
-
-### Autostart does not install
-
-- Extract the ZIP to a normal folder, for example `C:\AzapretApp-Public`.
-- Run `Azapret.exe` from the extracted folder.
-- Accept the Windows UAC prompt.
-- Check `app\runtime\service-actions.log`.
-- If `azapret-service-install-*.cmd` appears in `app\runtime`, run it as administrator to see the Windows/service error directly.
-
-### Manual Start works but Autostart does not
-
-This usually means Windows blocked elevation, service creation, or the UAC prompt was not confirmed. Manual Start and Autostart use different mechanisms: manual Start launches a batch file, Autostart creates the Windows `zapret` service.
-
-### Browser was open during start
-
-Reload the page or restart the browser after changing bypass profiles.
-
-## Project Layout
+## Структура Репозитория
 
 ```text
-AzapretApp-Public/       Public application folder
-release/                Prebuilt ZIP release
-assets/screenshots/     README screenshots
+AzapretApp-Public/       готовая Public-папка приложения
+release/                готовый ZIP-архив
+assets/screenshots/     скриншоты для README
 ```
 
-## Credits
+## Благодарности
 
-This launcher packages and automates zapret-style bypass profiles for easier desktop use.
+FastApp использует и упаковывает zapret-подходы в удобный лаунчер для Windows.
 
-Upstream project inspiration and tooling ecosystem: Flowseal zapret-discord-youtube.
+Оригинальный проект и экосистема zapret-discord-youtube:
 
-## License
+```text
+https://github.com/flowseal/zapret-discord-youtube
+```
 
-See included upstream files and licenses where applicable. This repository provides the launcher packaging and Public release bundle as-is.
+## Отказ От Ответственности
+
+Проект предоставляется как есть. Используйте его только там, где это разрешено вашими законами, правилами сети и условиями сервисов.
