@@ -1,0 +1,17 @@
+# Runtime/user state
+**/runtime/
+**/diagnostics/
+**/app-settings.json
+**/site-check-results.txt
+
+# Local diagnostic scripts
+**/diagnose-*.ps1
+**/debug-*.ps1
+**/test-*.ps1
+**/compare-*.ps1
+
+# OS/editor
+Thumbs.db
+.DS_Store
+.idea/
+.vscode/
