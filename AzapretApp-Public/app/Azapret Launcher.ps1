@@ -89,6 +89,8 @@ $script:T = @{
         serviceUpdates = 'Проверить обновления'
         diagnostics = 'Запустить диагностику'
         runTest = 'Запустить тесты'
+        csQuickCheck = 'CS/Faceit check'
+        csStopTtl = 'Стоп FACEIT TTL'
         dnsRepair = 'Инст и Фейсбук'
         dnsRestore = 'Стоп инст и ф.'
         tgAppFix = 'Прокси для TG'
@@ -155,8 +157,8 @@ $script:T = @{
         recommended = 'Рекомендуемый обход'
         noBypasses = 'Проверка завершена, но обходы не найдены.'
         updatesStart = 'Проверяю доступность обновлений zapret.'
-        updatesOk = 'GitHub releases доступен. Если нужен новый пакет, скачайте свежий релиз вручную.'
-        updatesFail = 'Не удалось проверить обновления'
+        updatesOk = 'Проверка обновлений отключена в этой сборке.'
+        updatesFail = 'Проверка обновлений отключена'
         launching = 'Запускаю'
         serviceOpen = 'Открываю меню service.bat. Выберите нужное действие в консоли.'
         serviceActionStart = 'Запускаю сервисное действие'
@@ -232,6 +234,8 @@ $script:T = @{
         serviceUpdates = 'Check for Updates'
         diagnostics = 'Run Diagnostics'
         runTest = 'Run Tests'
+        csQuickCheck = 'CS/Faceit check'
+        csStopTtl = 'Stop FACEIT TTL'
         dnsRepair = 'Inst and Facebook'
         dnsRestore = 'Stop Inst and FB'
         tgAppFix = 'Fix TG App'
@@ -298,8 +302,8 @@ $script:T = @{
         recommended = 'Recommended bypass'
         noBypasses = 'Check completed, but no bypasses were found.'
         updatesStart = 'Checking zapret updates availability.'
-        updatesOk = 'GitHub releases are available. Download the latest release manually if you need a new package.'
-        updatesFail = 'Failed to check updates'
+        updatesOk = 'Update checking is disabled in this build.'
+        updatesFail = 'Update checking is disabled'
         launching = 'Starting'
         serviceOpen = 'Opening service.bat menu. Choose the needed action in the console.'
         serviceActionStart = 'Starting service action'
@@ -441,8 +445,8 @@ $script:T = @{
         recommended = '推荐绕过方案'
         noBypasses = '检查完成，但没有找到绕过方案。'
         updatesStart = '正在检查 zapret 更新。'
-        updatesOk = 'GitHub releases 可访问。如需新包，请手动下载最新版本。'
-        updatesFail = '检查更新失败'
+        updatesOk = '此版本已禁用更新检查。'
+        updatesFail = '更新检查已禁用'
         launching = '正在启动'
         serviceOpen = '正在打开 service.bat 菜单，请在控制台选择需要的操作。'
         serviceActionStart = '正在启动服务操作'
@@ -584,8 +588,8 @@ $script:T = @{
         recommended = 'روش پیشنهادی'
         noBypasses = 'بررسی کامل شد، اما هیچ روش عبوری پیدا نشد.'
         updatesStart = 'در حال بررسی بروزرسانی zapret.'
-        updatesOk = 'GitHub releases در دسترس است. اگر بسته جدید لازم دارید، آخرین نسخه را دستی دانلود کنید.'
-        updatesFail = 'بررسی بروزرسانی ناموفق بود'
+        updatesOk = 'بررسی بروزرسانی در این نسخه غیرفعال است.'
+        updatesFail = 'بررسی بروزرسانی غیرفعال است'
         launching = 'در حال شروع'
         serviceOpen = 'منوی service.bat باز می شود. عملیات لازم را در کنسول انتخاب کنید.'
         serviceActionStart = 'عملیات سرویس شروع می شود'
@@ -1225,6 +1229,87 @@ function Stop-BypassHidden {
     Start-ElevatedHiddenCommand 'taskkill /IM winws.exe /F >nul 2>&1 & net stop zapret >nul 2>&1 & net stop WinDivert >nul 2>&1 & net stop WinDivert14 >nul 2>&1 & ipconfig /flushdns >nul 2>&1' -Wait $true
 }
 
+function Stop-CsFaceitBypassHidden {
+    Add-Log 'CS/Faceit: останавливаю только ранее запущенный TTL-профиль, основной обход не трогаю.'
+    $runtimeDir = Join-Path $Root 'runtime'
+    if (-not (Test-Path -LiteralPath $runtimeDir)) { New-Item -ItemType Directory -Path $runtimeDir | Out-Null }
+    $pidFile = Join-Path $runtimeDir 'faceit-ttl.pid'
+    $stopScript = Join-Path $runtimeDir 'azapret-faceit-ttl-stop.ps1'
+    $scriptText = @'
+param([string]$PidFile)
+$ErrorActionPreference = 'Continue'
+if (Test-Path -LiteralPath $PidFile) {
+    $pidText = (Get-Content -LiteralPath $PidFile -ErrorAction SilentlyContinue | Select-Object -First 1)
+    $pidValue = 0
+    if ([int]::TryParse($pidText, [ref]$pidValue)) {
+        Stop-Process -Id $pidValue -Force -ErrorAction SilentlyContinue
+    }
+    Remove-Item -LiteralPath $PidFile -Force -ErrorAction SilentlyContinue
+}
+Get-CimInstance Win32_Process -Filter "name = 'winws.exe'" -ErrorAction SilentlyContinue |
+    Where-Object { $_.CommandLine -like '*--dpi-desync-ttl=*' -and $_.CommandLine -like '*--filter-udp=1024-65535*' } |
+    ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+'@
+    [System.IO.File]::WriteAllText($stopScript, $scriptText, [System.Text.Encoding]::UTF8)
+    Start-ElevatedHiddenCommand ('powershell.exe -NoProfile -ExecutionPolicy Bypass -File "' + $stopScript.Replace('"', '""') + '" -PidFile "' + $pidFile.Replace('"', '""') + '"') -Wait $true
+}
+
+function Get-CsFaceitWinwsArgs {
+    param([string]$ProfilePath)
+    if (-not (Test-Path -LiteralPath $ProfilePath)) { return $null }
+
+    $text = Get-Content -LiteralPath $ProfilePath -Raw -Encoding UTF8
+    if ($text -notmatch '--dpi-desync-ttl=(\d+)') { return $null }
+    $ttl = [int]$Matches[1]
+    $binDir = Join-Path $Root 'bin\'
+    $listsDir = Join-Path $Root 'lists\'
+    return '--wf-udp=1024-65535 --filter-udp=1024-65535 --ipset-exclude="' + $listsDir + 'ipset-exclude.txt" --ipset-exclude="' + $listsDir + 'ipset-exclude-user.txt" --dpi-desync=fake --dpi-desync-repeats=10 --dpi-desync-any-protocol=1 --dpi-desync-cutoff=n4 --dpi-desync-ttl=' + $ttl + ' --dpi-desync-fake-unknown-udp="' + $binDir + 'stun.bin"'
+}
+
+function Start-CsFaceitProfileJoint {
+    param([object]$Profile)
+    $args = Get-CsFaceitWinwsArgs -ProfilePath $Profile.Path
+    if (-not $args) {
+        Add-Log "CS/Faceit: не удалось разобрать winws args из $($Profile.Name)." ([System.Drawing.Color]::FromArgb(248, 113, 113)) $true
+        return $false
+    }
+
+    $bin = Join-Path $Root 'bin\winws.exe'
+    $runtimeDir = Join-Path $Root 'runtime'
+    if (-not (Test-Path -LiteralPath $runtimeDir)) { New-Item -ItemType Directory -Path $runtimeDir | Out-Null }
+    $faceitLog = Join-Path $runtimeDir 'faceit-ttl.log'
+    $pidFile = Join-Path $runtimeDir 'faceit-ttl.pid'
+    $launchScript = Join-Path $runtimeDir ('azapret-faceit-ttl-' + [Guid]::NewGuid().ToString('N') + '.ps1')
+    $escape = { param([string]$Value) $Value.Replace("'", "''") }
+    $scriptText = @"
+`$ErrorActionPreference = 'Continue'
+`$winws = '$(& $escape $bin)'
+`$arguments = @'
+$args
+'@
+`$workDir = '$(& $escape $Root)'
+`$pidFile = '$(& $escape $pidFile)'
+`$logFile = '$(& $escape $faceitLog)'
+`$profileName = '$(& $escape $Profile.Name)'
+Add-Content -LiteralPath `$logFile -Value ('FACEIT TTL launcher ' + (Get-Date -Format 'yyyy-MM-dd HH:mm:ss') + ' profile=' + `$profileName)
+try {
+    `$process = Start-Process -FilePath `$winws -ArgumentList `$arguments -WorkingDirectory `$workDir -WindowStyle Minimized -PassThru -ErrorAction Stop
+    if (`$process) {
+        Set-Content -LiteralPath `$pidFile -Value `$process.Id -Encoding ASCII
+        Add-Content -LiteralPath `$logFile -Value ('FACEIT TTL pid=' + `$process.Id)
+    }
+} catch {
+    Add-Content -LiteralPath `$logFile -Value ('FACEIT TTL start failed: ' + `$_.Exception.Message)
+}
+"@
+    [System.IO.File]::WriteAllText($launchScript, $scriptText, [System.Text.Encoding]::UTF8)
+    Add-Log 'CS/Faceit: запускаю отдельный CS-only winws свернутым рядом с основным обходом.'
+    $psArgs = '-NoProfile -ExecutionPolicy Bypass -File "' + $launchScript.Replace('"', '""') + '"'
+    $ps = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+    Start-ElevatedFile -FilePath $ps -Arguments ('-WindowStyle Minimized ' + $psArgs)
+    return $true
+}
+
 function Stop-Bypass {
     $stopBat = Join-Path $Root 'stop-zapret-emergency.bat'
     if (Test-Path -LiteralPath $stopBat) {
@@ -1675,12 +1760,7 @@ function Test-AccessAfterStart {
 
 function Check-Updates {
     Add-Log (Tr 'updatesStart')
-    $result = Test-UrlFast -Url 'https://github.com/bol-van/zapret/releases/latest'
-    if ($result.Ok) {
-        Add-Log ((Tr 'updatesOk') + " HTTP $($result.Code), $($result.Ms) ms.")
-    } else {
-        Add-Log ((Tr 'updatesFail') + ": $($result.Error)")
-    }
+    Add-Log (Tr 'updatesOk')
 }
 
 function Run-SelectedBypass {
@@ -1849,6 +1929,264 @@ function Set-GameFilterMode {
     Add-SuccessLog ((Tr 'gameFilterDone') + ' ' + $script:GameFilterDialogMode)
 }
 
+function Set-GameFilterUdpOnly {
+    $utilsDir = Join-Path $Root 'utils'
+    if (-not (Test-Path -LiteralPath $utilsDir)) { New-Item -ItemType Directory -Path $utilsDir | Out-Null }
+    Set-Content -LiteralPath (Join-Path $utilsDir 'game_filter.enabled') -Value 'udp' -Encoding ASCII
+    Add-RecommendLog 'Game Filter переключен в UDP only для CS/Faceit проверки.'
+}
+
+function Convert-ToCsServerTarget {
+    param([string]$InputText)
+    $value = ([string]$InputText).Trim()
+    if (-not $value) { return $null }
+    if ($value -match '^(.+):(\d+)$') {
+        return [pscustomobject]@{ Host = $Matches[1].Trim(); Port = [int]$Matches[2] }
+    }
+    return [pscustomobject]@{ Host = $value; Port = 27015 }
+}
+
+function Test-CsQuickTarget {
+    param([object]$Target)
+    if (-not $Target) {
+        Add-Log 'CS server не указан: проверка CS пропущена.' ([System.Drawing.Color]::FromArgb(245, 158, 11)) $true
+        return [pscustomobject]@{ PingOk = $false; AvgMs = 999999; LossPct = 100; UdpSent = $false }
+    }
+
+    Add-Log "CS server: $($Target.Host):$($Target.Port)"
+    try {
+        $ping = @(Test-Connection -ComputerName $Target.Host -Count 4 -ErrorAction Stop)
+        $avg = [math]::Round(($ping | Measure-Object -Property ResponseTime -Average).Average, 1)
+        $loss = 100 - [math]::Round(($ping.Count / 4) * 100, 0)
+        Add-Log "CS ping: OK avg=$avg ms, loss=$loss%."
+        $pingOk = $true
+    } catch {
+        Add-Log "CS ping: FAIL или ICMP заблокирован - $($_.Exception.Message)" ([System.Drawing.Color]::FromArgb(248, 113, 113)) $true
+        $pingOk = $false
+        $avg = 999999
+        $loss = 100
+    }
+
+    try {
+        $client = [Net.Sockets.UdpClient]::new()
+        $client.Client.SendTimeout = 2000
+        $payload = [Text.Encoding]::ASCII.GetBytes('Azapret-CS2-UDP-probe')
+        [void]$client.Send($payload, $payload.Length, $Target.Host, $Target.Port)
+        $client.Close()
+        Add-Log "CS UDP probe: SENT to $($Target.Host):$($Target.Port). Это не доказывает игровой connect, но показывает отправку UDP."
+        $udpSent = $true
+    } catch {
+        Add-Log "CS UDP probe: FAIL - $($_.Exception.Message)" ([System.Drawing.Color]::FromArgb(248, 113, 113)) $true
+        $udpSent = $false
+    }
+
+    return [pscustomobject]@{ PingOk = $pingOk; AvgMs = $avg; LossPct = $loss; UdpSent = $udpSent }
+}
+
+function Start-CsAutoTtlTest {
+    param([string]$ServerText)
+    $scriptPath = Join-Path (Join-Path $Root 'tools') 'test-cs-ttl-auto.ps1'
+    if (-not (Test-Path -LiteralPath $scriptPath)) {
+        Add-Log "AUTO TTL test script not found: $scriptPath" ([System.Drawing.Color]::FromArgb(248, 113, 113)) $true
+        return
+    }
+
+    Set-GameFilterUdpOnly
+    Add-RecommendLog 'AUTO TTL3-7: проверяю введенный CS IP по всем TTL и применяю лучший временно. Автостарт службы не переписывается.'
+    $ps = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+    $args = '-NoProfile -ExecutionPolicy Bypass -File "' + $scriptPath.Replace('"', '\"') + '" -CsServer "' + ([string]$ServerText).Replace('"', '\"') + '" -ApplyBest'
+    Start-ElevatedFile -FilePath $ps -Arguments $args
+    Add-Log 'AUTO TTL3-7: после завершения смотри лог app\test-results\cs-ttl-auto-*.txt.'
+}
+
+function Run-CsTtlIpCheck {
+    param(
+        [string]$ServerText,
+        [object[]]$Profiles
+    )
+
+    $target = Convert-ToCsServerTarget -InputText $ServerText
+    if (-not $target) {
+        Add-Log 'CS/Faceit: сначала укажите CS server IP:PORT.' ([System.Drawing.Color]::FromArgb(248, 113, 113)) $true
+        return $null
+    }
+
+    Set-GameFilterUdpOnly
+    Add-RecommendLog "CS/Faceit IP check: проверяю $($target.Host):$($target.Port) по всем FACEIT TTL профилям. Основной обход/автостарт не останавливается."
+
+    $results = New-Object System.Collections.Generic.List[object]
+    try {
+        foreach ($profile in $Profiles) {
+            if ($profile.Name -notmatch 'TTL(\d+)') { continue }
+            $ttl = [int]$Matches[1]
+            Add-Log "================ TTL$ttl ================"
+            Add-Log "CS/Faceit: временно запускаю $($profile.Name) совместно с основным обходом."
+            [System.Windows.Forms.Application]::DoEvents()
+            Stop-CsFaceitBypassHidden
+            Start-Sleep -Milliseconds 900
+            [void](Start-CsFaceitProfileJoint -Profile $profile)
+            Start-Sleep -Seconds 5
+            $test = Test-CsQuickTarget -Target $target
+            $results.Add([pscustomobject]@{ TTL = $ttl; Profile = $profile; PingOk = $test.PingOk; AvgMs = $test.AvgMs; LossPct = $test.LossPct; UdpSent = $test.UdpSent }) | Out-Null
+            [System.Windows.Forms.Application]::DoEvents()
+        }
+    } finally {
+        Stop-CsFaceitBypassHidden
+        if (Test-ZapretServiceRunning) {
+            $script:BypassRunning = $true
+            Set-BypassStatus 'statusRunning' ([System.Drawing.Color]::FromArgb(34, 197, 94))
+            Apply-Language
+            Add-SuccessLog 'Основной обход/служба остались запущены.'
+        }
+    }
+
+    Add-Log '================ CS/Faceit TTL summary ================'
+    foreach ($item in $results) {
+        Add-Log "TTL$($item.TTL): pingOk=$($item.PingOk), avg=$($item.AvgMs) ms, loss=$($item.LossPct)%, udpSent=$($item.UdpSent)."
+    }
+    $best = $results | Sort-Object @{ Expression = { if ($_.PingOk) { 0 } else { 1 } } }, LossPct, AvgMs, TTL | Select-Object -First 1
+    if ($best) {
+        Add-RecommendLog "Рекомендация для этого IP: FACEIT CS2 TTL$($best.TTL), ping $($best.AvgMs) ms, loss $($best.LossPct)%. Выберите этот TTL и нажмите «Запустить выбранный TTL»."
+        return $best
+    } else {
+        Add-Log 'CS/Faceit: не удалось выбрать TTL.' ([System.Drawing.Color]::FromArgb(248, 113, 113)) $true
+        return $null
+    }
+}
+
+function Run-CsQuickCheck {
+    $profiles = @($script:Bypasses | Where-Object { $_.Name -like 'general (FACEIT CS2 TTL*).bat' } | Sort-Object Name)
+    if ($profiles.Count -eq 0) {
+        Add-Log 'FACEIT CS2 TTL профили не найдены в app\bypasses.' ([System.Drawing.Color]::FromArgb(248, 113, 113)) $true
+        return
+    }
+
+    $dialog = New-Object System.Windows.Forms.Form
+    $dialog.Text = 'CS/Faceit quick check'
+    $dialog.StartPosition = 'CenterParent'
+    $dialog.Size = New-Object System.Drawing.Size(620, 360)
+    $dialog.FormBorderStyle = 'FixedDialog'
+    $dialog.MaximizeBox = $false
+    $dialog.MinimizeBox = $false
+    $dialog.BackColor = [System.Drawing.Color]::FromArgb(15, 23, 42)
+    $dialog.ForeColor = [System.Drawing.Color]::FromArgb(226, 232, 240)
+
+    $title = New-Label -Text 'CS/Faceit quick check' -X 24 -Y 18 -Size 14 -Bold $true
+    $title.ForeColor = [System.Drawing.Color]::FromArgb(125, 211, 252)
+    $dialog.Controls.Add($title)
+
+    $hint = New-Object System.Windows.Forms.Label
+    $hint.Text = '1) Введите CS/FACEIT server IP:PORT. 2) Нажмите «Проверить IP по всем TTL». 3) Выберите рекомендованный TTL и нажмите «Запустить выбранный TTL». Основной обход/автостарт остается работать совместно.'
+    $hint.Location = New-Object System.Drawing.Point(24, 52)
+    $hint.Size = New-Object System.Drawing.Size(560, 70)
+    $hint.Font = New-Object System.Drawing.Font('Segoe UI', 9.5)
+    $hint.ForeColor = [System.Drawing.Color]::FromArgb(203, 213, 225)
+    $hint.BackColor = $dialog.BackColor
+    $dialog.Controls.Add($hint)
+
+    $serverLabel = New-Label -Text 'CS server IP:PORT' -X 24 -Y 132 -Size 10 -Bold $true
+    $serverLabel.ForeColor = [System.Drawing.Color]::FromArgb(226, 232, 240)
+    $dialog.Controls.Add($serverLabel)
+
+    $serverBox = New-Object System.Windows.Forms.TextBox
+    $serverBox.Location = New-Object System.Drawing.Point(24, 156)
+    $serverBox.Size = New-Object System.Drawing.Size(250, 28)
+    $serverBox.Text = '217.168.247.79:27345'
+    $dialog.Controls.Add($serverBox)
+
+    $ttlLabel = New-Label -Text 'TTL профиль' -X 314 -Y 132 -Size 10 -Bold $true
+    $ttlLabel.ForeColor = [System.Drawing.Color]::FromArgb(226, 232, 240)
+    $dialog.Controls.Add($ttlLabel)
+
+    $ttlBox = New-Object System.Windows.Forms.ComboBox
+    $ttlBox.DropDownStyle = 'DropDownList'
+    $ttlBox.Location = New-Object System.Drawing.Point(314, 156)
+    $ttlBox.Size = New-Object System.Drawing.Size(260, 28)
+    foreach ($profile in $profiles) { [void]$ttlBox.Items.Add($profile.Name) }
+    $default = $profiles | Where-Object { $_.Name -like '*TTL5*' } | Select-Object -First 1
+    if ($default) { $ttlBox.SelectedItem = $default.Name } else { $ttlBox.SelectedIndex = 0 }
+    $dialog.Controls.Add($ttlBox)
+
+    $resultLabel = New-Object System.Windows.Forms.Label
+    $resultLabel.Text = 'Результат появится здесь и в журнале справа.'
+    $resultLabel.Location = New-Object System.Drawing.Point(24, 196)
+    $resultLabel.Size = New-Object System.Drawing.Size(560, 38)
+    $resultLabel.Font = New-Object System.Drawing.Font('Segoe UI', 9.5, [System.Drawing.FontStyle]::Bold)
+    $resultLabel.ForeColor = [System.Drawing.Color]::FromArgb(203, 213, 225)
+    $resultLabel.BackColor = $dialog.BackColor
+    $dialog.Controls.Add($resultLabel)
+
+    $check = New-Button -Text 'Проверить IP по всем TTL' -X 24 -Y 252 -W 230 -H 38 -Click {
+        $check.Enabled = $false
+        $start.Enabled = $false
+        $resultLabel.Text = 'Идет проверка IP по всем FACEIT TTL...'
+        [System.Windows.Forms.Application]::DoEvents()
+        Add-Log "CS/Faceit check: server=$([string]$serverBox.Text), action=check-all-ttl."
+        $best = Run-CsTtlIpCheck -ServerText ([string]$serverBox.Text) -Profiles $profiles
+        if ($best) {
+            $recommendedName = $best.Profile.Name
+            $ttlBox.SelectedItem = $recommendedName
+            $resultLabel.Text = "Лучший для этого IP: TTL$($best.TTL), ping $($best.AvgMs) ms, loss $($best.LossPct)%. Теперь нажмите «Запустить выбранный TTL»."
+        } else {
+            $resultLabel.Text = 'Не удалось выбрать TTL. Смотрите журнал справа.'
+        }
+        $check.Enabled = $true
+        $start.Enabled = $true
+    }.GetNewClosure() -Accent $false
+    $dialog.Controls.Add($check)
+    Set-ButtonTheme -Button $check -Accent $false
+
+    $start = New-Button -Text 'Запустить выбранный TTL' -X 270 -Y 252 -W 200 -H 38 -Click {
+        $selectedText = [string]$ttlBox.SelectedItem
+        $serverText = [string]$serverBox.Text
+        Add-Log "CS/Faceit check: server=$serverText, action=start-selected, profile=$selectedText."
+        $selectedProfile = $profiles | Where-Object { $_.Name -eq $selectedText } | Select-Object -First 1
+        if (-not $selectedProfile) {
+            $resultLabel.Text = 'Выберите TTL профиль.'
+            return
+        }
+
+        Set-GameFilterUdpOnly
+        Add-RecommendLog 'CS/Faceit профиль запускается временно совместно с основным обходом. Автостарт службы не переписывается.'
+        Stop-CsFaceitBypassHidden
+        Start-Sleep -Milliseconds 900
+
+        Add-Log "CS/Faceit: запускаю $($selectedProfile.Name)."
+        Set-BypassStatus 'statusStarting' ([System.Drawing.Color]::FromArgb(234, 179, 8))
+        [void](Start-CsFaceitProfileJoint -Profile $selectedProfile)
+        $script:BypassRunning = $true
+        Apply-Language
+        Start-Sleep -Seconds 5
+        Verify-BypassStarted
+
+        $result = Test-CsQuickTarget -Target (Convert-ToCsServerTarget -InputText $serverText)
+        if ($result.PingOk -and $result.UdpSent) {
+            $resultLabel.Text = "$($selectedProfile.Name) запущен временно. Ping $($result.AvgMs) ms, loss $($result.LossPct)%."
+            Add-RecommendLog "CS/Faceit: $($selectedProfile.Name) применен. Ping $($result.AvgMs) ms, loss $($result.LossPct)%. Проверьте connect/loss в игре."
+        } else {
+            $resultLabel.Text = "$($selectedProfile.Name) запущен, но проверка IP не подтвердилась. Смотрите журнал."
+        }
+    }.GetNewClosure() -Accent $true
+    $dialog.Controls.Add($start)
+    Set-ButtonTheme -Button $start -Accent $true
+
+    $stopTtl = New-Button -Text 'Стоп TTL' -X 482 -Y 252 -W 80 -H 38 -Click {
+        Stop-CsFaceitBypassHidden
+        $resultLabel.Text = 'FACEIT TTL остановлен. Основной обход не тронут.'
+        Add-SuccessLog 'FACEIT TTL остановлен. Основной обход не тронут.'
+    }.GetNewClosure()
+    $dialog.Controls.Add($stopTtl)
+    Set-ButtonTheme -Button $stopTtl -Accent $false
+
+    $cancel = New-Button -Text 'X' -X 570 -Y 252 -W 34 -H 38 -Click { $dialog.Close() }.GetNewClosure()
+    $cancel.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
+    $dialog.Controls.Add($cancel)
+    Set-ButtonTheme -Button $cancel -Accent $false
+    $dialog.CancelButton = $cancel
+
+    [void]$dialog.ShowDialog($form)
+}
+
 function Switch-IpSetFilter {
     $listFile = Join-Path (Join-Path $Root 'lists') 'ipset-all.txt'
     $backupFile = $listFile + '.backup'
@@ -1908,6 +2246,8 @@ function Run-Action {
         'hosts' { Open-ServiceChoice 8 }
         'serviceUpdates' { Open-ServiceChoice 9 }
         'diagnostics' { Run-ServiceDiagnosticsVisible }
+        'csQuickCheck' { Run-CsQuickCheck }
+        'csStopTtl' { Stop-CsFaceitBypassHidden; Add-SuccessLog 'FACEIT TTL остановлен. Основной обход не тронут.' }
         'dnsRepair' { Repair-SystemDns }
         'dnsRestore' { Restore-SystemDns }
         'tgAppFix' { Invoke-TelegramAppFix }
@@ -2849,6 +3189,8 @@ $serviceActions = @(
     @{ Text = 'ipset'; Action = 'ipset' },
     @{ Text = 'updateIp'; Action = 'update' },
     @{ Text = 'diagnostics'; Action = 'diagnostics' },
+    @{ Text = 'csQuickCheck'; Action = 'csQuickCheck' },
+    @{ Text = 'csStopTtl'; Action = 'csStopTtl' },
     @{ Text = 'dnsRepair'; Action = 'dnsRepair' },
     @{ Text = 'dnsRestore'; Action = 'dnsRestore' },
     @{ Text = 'clearCache'; Action = 'clearCache' },
