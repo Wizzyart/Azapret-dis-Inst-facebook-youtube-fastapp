@@ -1,6 +1,10 @@
 Azapret Discord / YouTube / CSGO2 TTL для Windows.
 
-## Как пользоваться CSGO2 / FACEIT / CS2 TTL
+Если вы играете в CS2 / CSGO2 / FACEIT на серверах Европы, Америки или других регионов, и матч не подключается, зависает на соединении или появляется packet loss, включите новую функцию `CS/Faceit check`.
+
+Она проверяет IP сервера по FACEIT TTL-профилям, подсказывает лучший TTL и запускает игровой TTL-обход вместе с вашим обычным обходом Discord/YouTube.
+
+## Быстрый старт CSGO2 / FACEIT / CS2
 
 1. Оставьте обычный обход Discord/YouTube в автостарте, например `ALT11`.
 2. Откройте Azapret и перейдите в `Сервисные действия`.
@@ -15,7 +19,30 @@ Azapret Discord / YouTube / CSGO2 TTL для Windows.
 - FACEIT TTL запускается вместе с основным обходом Discord/YouTube.
 - Автостарт службы не переписывается.
 - `Стоп FACEIT TTL` останавливает только игровой TTL-процесс.
+- Основной обход Discord/YouTube продолжает работать.
 - Проверка IP выбирает TTL по ping/loss до указанного сервера, но итог всё равно нужно подтвердить в игре.
+
+## Скрины запуска CSGO2 / FACEIT TTL
+
+Откройте `Сервисные действия` и нажмите `CS/Faceit check`.
+
+![CSGO2 TTL step 1](https://github.com/Wizzyart/Azapret-dis-Inst-facebook-youtube-fastapp/releases/download/public-csgo2-ttl-20260601/csgo2-ttl-1.png)
+
+Введите IP сервера в формате `IP:PORT`, затем нажмите `Проверить IP по всем TTL`.
+
+![CSGO2 TTL step 2](https://github.com/Wizzyart/Azapret-dis-Inst-facebook-youtube-fastapp/releases/download/public-csgo2-ttl-20260601/csgo2-ttl-2.png)
+
+Azapret проверит доступные FACEIT TTL-профили и покажет рекомендацию в popup и журнале.
+
+![CSGO2 TTL step 3](https://github.com/Wizzyart/Azapret-dis-Inst-facebook-youtube-fastapp/releases/download/public-csgo2-ttl-20260601/csgo2-ttl-3.png)
+
+Выберите рекомендованный TTL и нажмите `Запустить выбранный TTL`.
+
+![CSGO2 TTL step 5](https://github.com/Wizzyart/Azapret-dis-Inst-facebook-youtube-fastapp/releases/download/public-csgo2-ttl-20260601/csgo2-ttl-5.png)
+
+После игры нажмите `Стоп TTL` или `Стоп FACEIT TTL`, чтобы выключить только игровой TTL-процесс.
+
+![CSGO2 TTL step 6](https://github.com/Wizzyart/Azapret-dis-Inst-facebook-youtube-fastapp/releases/download/public-csgo2-ttl-20260601/csgo2-ttl-6.png)
 
 ## Возможности
 
@@ -34,14 +61,6 @@ Azapret Discord / YouTube / CSGO2 TTL для Windows.
 - фикс Instagram/Facebook;
 - Telegram proxy-инструкция;
 - русскоязычный интерфейс.
-
-## Скрины
-
-- `csgo2-ttl-1.png`
-- `csgo2-ttl-2.png`
-- `csgo2-ttl-3.png`
-- `csgo2-ttl-5.png`
-- `csgo2-ttl-6.png`
 
 Перед запуском полностью распакуйте архив.
 Антивирус может ругаться на WinDivert/winws/bat/ps1 файлы, это ожидаемо для сетевых инструментов.
