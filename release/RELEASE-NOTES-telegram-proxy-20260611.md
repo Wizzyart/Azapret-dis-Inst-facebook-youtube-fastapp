@@ -106,3 +106,15 @@ app\Start-TG-Proxy.ps1
 ```text
 app\docs\TG-WS-PROXY-NOTICE.md
 ```
+
+## Поддержать разработку
+
+Если Azapret оказался полезным, вы можете поддержать дальнейшую разработку.
+
+Поддержка помогает добавлять новые варианты обхода, улучшать автостарт, делать понятный интерфейс и готовить новые версии приложения.
+
+```text
+USDT TRC20: TSHxLUkcRQno3hJQ1DAcx2UPEbjEMJsSUh
+USDT ERC20: 0xcef2832570ebee0395b055127ca14b069916c70d
+BTC:        1GdFQj3PZEJvPY6zHXT8j8brnB59bHHVs7
+```
