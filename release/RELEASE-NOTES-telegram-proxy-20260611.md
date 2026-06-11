@@ -1,46 +1,96 @@
-# Azapret Public: Local Telegram Proxy
+# Azapret Public: встроенный Telegram proxy
 
-Portable Windows build for Discord, YouTube, Telegram, Instagram, Facebook, FACEIT / CS2 and other domains from the included lists.
+Это основной Public-релиз Azapret для Windows. В нём добавлен встроенный локальный Telegram proxy и исправлен его автозапуск после перезагрузки.
 
-## What is new
+## Скачать
 
-- Added a built-in local Telegram MTProto proxy based on `tg-ws-proxy`.
-- The Telegram button now starts a local proxy on `127.0.0.1` and opens Telegram with the correct proxy link.
-- Added Windows autostart for the local Telegram proxy.
-- Added a dedicated startup wrapper that writes the proxy config as UTF-8 without BOM, so the proxy secret stays stable after reboot.
-- Added fallback local ports: `1443`, `2443`, `3443`, `8443`, `9443`, `10443`.
-- Added `Stop TG proxy` to stop the local proxy and remove its autostart.
-- Added Telegram WebSocket domains to the general list.
+Нужен только этот файл:
 
-## Included downloads
+```text
+AzapretApp-Public.zip
+```
 
-- `AzapretApp-Public.zip` - main Public build.
-- `Azapret-PublicCSGO2.zip` - Public build with CSGO2 / FACEIT TTL profiles.
-- `AzapretApp-Public-CSGO2-FACEIT-TTL.zip` - alias of the CSGO2 / FACEIT TTL build.
+Архивы с CSGO2 / FACEIT TTL в этом релизе не нужны. Основной Public-релиз - это `AzapretApp-Public.zip`.
 
-## How to use Telegram proxy
+## Как запустить
 
-1. Extract the archive.
-2. Run `Azapret.exe`.
-3. Open the Telegram tab.
-4. Click `Прокси для TG` / `Fix TG App`.
-5. Confirm the proxy in Telegram Desktop.
+1. Скачайте `AzapretApp-Public.zip`.
+2. Полностью распакуйте архив в отдельную папку.
+3. Запустите `Azapret.exe`.
+4. Для обычного обхода нажмите `Проверка сети`, затем `Старт`.
+5. Для Telegram откройте вкладку `Телеграм` и нажмите `Прокси для TG`.
+6. В Telegram подтвердите подключение proxy.
 
-After that, the local Telegram proxy will start automatically with Windows.
+## Что нового в Telegram
 
-If Telegram has old `127.0.0.1:1443` proxy entries, remove them and add the new one from Azapret.
+- Встроен локальный Telegram MTProto proxy.
+- Proxy запускается на `127.0.0.1`.
+- Azapret сам открывает Telegram с правильной proxy-ссылкой.
+- Добавлен отдельный автозапуск Telegram proxy в Windows.
+- Исправлена проблема, когда после перезагрузки менялся `secret` и Telegram показывал `connecting`.
+- Config proxy теперь пишется UTF-8 без BOM.
+- Добавлена кнопка `Стоп TG прокси`.
 
-## Verification
+## Скриншоты и инструкция
 
-The release build was checked for:
+### 1. Откройте вкладку Telegram в Azapret
+
+![Telegram в Azapret](https://raw.githubusercontent.com/Wizzyart/Azapret-dis-Inst-facebook-youtube-fastapp/main/docs/screenshots/telegram/telegram-main.jpg)
+
+### 2. Нажмите `Прокси для TG`
+
+Azapret запустит локальный proxy и откроет Telegram с правильной ссылкой.
+
+![Кнопка Telegram proxy](https://raw.githubusercontent.com/Wizzyart/Azapret-dis-Inst-facebook-youtube-fastapp/main/docs/screenshots/telegram/telegram-proxy-1.jpg)
+
+### 3. Подтвердите proxy в Telegram
+
+Если Telegram показывает старые записи `127.0.0.1:1443`, удалите их и добавьте proxy заново через Azapret.
+
+![Настройки proxy в Telegram](https://raw.githubusercontent.com/Wizzyart/Azapret-dis-Inst-facebook-youtube-fastapp/main/docs/screenshots/telegram/telegram-proxy-2.jpg)
+
+### 4. Убедитесь, что proxy подключился
+
+После подключения Telegram может использовать локальный proxy автоматически.
+
+![Telegram proxy подключён](https://raw.githubusercontent.com/Wizzyart/Azapret-dis-Inst-facebook-youtube-fastapp/main/docs/screenshots/telegram/telegram-proxy-3.jpg)
+
+## Автозапуск Telegram proxy
+
+После успешного запуска Azapret создаёт отдельный автозапуск:
+
+```text
+AzapretTGProxy
+```
+
+Он запускает:
+
+```text
+app\Start-TG-Proxy.ps1
+```
+
+Этот wrapper перед стартом proxy записывает корректный `%APPDATA%\TgWsProxy\config.json`, чтобы Telegram proxy поднимался после перезагрузки с тем же `secret`.
+
+## Если Telegram не подключается
+
+1. Удалите старые proxy `127.0.0.1:1443` в Telegram.
+2. В Azapret нажмите `Стоп TG прокси`.
+3. Нажмите `Прокси для TG` заново.
+4. Подтвердите новый proxy в Telegram.
+
+## Проверено перед релизом
 
 - PowerShell syntax.
-- bundled `TgWsProxy_windows.exe` presence.
-- stable Telegram proxy secret after cold-start simulation.
-- Windows Run autostart entry.
-- local listener on `127.0.0.1:1443`.
-- real Telegram connection through `kws*.web.telegram.org`.
+- Наличие `TgWsProxy_windows.exe`.
+- Автозапуск через `AzapretTGProxy`.
+- Стабильность `secret` после cold-start теста.
+- Локальный listener `127.0.0.1:1443`.
+- Реальное подключение Telegram через `kws*.web.telegram.org`.
 
 ## Third-party notice
 
-The local Telegram proxy uses `Flowseal/tg-ws-proxy` under the MIT license. The notice is included in `app/docs/TG-WS-PROXY-NOTICE.md`.
+Локальный Telegram proxy использует `Flowseal/tg-ws-proxy` под MIT License. Notice включён в архиве:
+
+```text
+app\docs\TG-WS-PROXY-NOTICE.md
+```
