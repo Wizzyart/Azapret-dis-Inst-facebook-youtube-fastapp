@@ -1,4 +1,4 @@
-cloudflare-ech.com
+﻿cloudflare-ech.com
 encryptedsni.com
 cloudflareaccess.com
 cloudflareapps.com
@@ -47,3 +47,21 @@ betterttv.net
 7tv.io
 localizeapi.com
 klipy.com
+telegram.org
+desktop.telegram.org
+api.telegram.org
+telegram.me
+web.telegram.org
+kws1.web.telegram.org
+kws1-1.web.telegram.org
+kws2.web.telegram.org
+kws2-1.web.telegram.org
+kws3.web.telegram.org
+kws3-1.web.telegram.org
+kws4.web.telegram.org
+kws4-1.web.telegram.org
+kws5.web.telegram.org
+kws5-1.web.telegram.org
+pluto.web.telegram.org
+venus.web.telegram.org
+flora.web.telegram.org

@@ -41,6 +41,9 @@ $script:Settings = [ordered]@{
     startWithWindows = $false
     theme = 'dark'
     firstRunGuideShown = $false
+    tgProxySecret = ''
+    tgProxyPort = 1443
+    tgProxyAutostart = $false
 }
 $script:IsNetworkChecking = $false
 $script:CancelNetworkCheck = $false
@@ -98,6 +101,7 @@ $script:T = @{
         tgProxyPopupTitle = 'Все прокси для Telegram'
         tgProxyOpenChannel = 'Открыть канал'
         tgDownload = 'Скачать TG'
+        tgStopProxy = 'Стоп TG прокси'
         tgProxyScreensHint = 'Скриншоты появятся здесь. Положите PNG/JPG в папку app\telegram-proxy-screens.'
         tgProxyChannelOpen = 'Открываю Telegram-канал с proxy.'
         tgProxyChannelAsk = 'Открыть Telegram и перейти в канал с proxy?'
@@ -175,8 +179,16 @@ $script:T = @{
         dnsRestoreStart = 'Удаляю фикс сайтов и возвращаю настройки браузера.'
         dnsRestoreDone = 'Фикс удалён. Закройте и откройте браузер, затем повторите проверку сайтов.'
         dnsRestoreMissing = 'Фикс не найден. Его не нужно удалять.'
-        tgAppFixStart = 'Открыть Telegram proxy сейчас?'
-        tgAppFixDone = 'Telegram proxy открыт. Если Telegram спросит подтверждение, нажмите подключение proxy.'
+        tgAppFixStart = 'Запустить локальный Telegram proxy и открыть его в Telegram?'
+        tgAppFixDone = 'Локальный Telegram proxy запущен. Если Telegram спросит подтверждение, нажмите подключение proxy.'
+        tgProxyMissing = 'TG WS Proxy не найден'
+        tgProxyStarting = 'Запускаю локальный TG WS Proxy.'
+        tgProxyRunning = 'TG WS Proxy уже запущен.'
+        tgProxyReady = 'TG WS Proxy слушает 127.0.0.1'
+        tgProxyNotReady = 'TG WS Proxy запущен, но порт пока не отвечает. Подождите несколько секунд и нажмите ещё раз.'
+        tgProxyPortBusy = 'Порт TG proxy уже занят другим приложением'
+        tgProxyStopped = 'TG WS Proxy остановлен.'
+        tgProxyLinkCopied = 'Локальная ссылка Telegram proxy скопирована в буфер обмена.'
         extraStart = 'Запускаю дополнительные инструменты.'
         safeTest = 'Run Tests: запускаю встроенную проверку.'
         builtinTest = 'Run Tests: запускаю встроенную проверку сети.'
@@ -243,6 +255,7 @@ $script:T = @{
         tgProxyPopupTitle = 'All Telegram Proxies'
         tgProxyOpenChannel = 'Open Channel'
         tgDownload = 'Download TG'
+        tgStopProxy = 'Stop TG proxy'
         tgProxyScreensHint = 'Screenshots will appear here. Put PNG/JPG files into app\telegram-proxy-screens.'
         tgProxyChannelOpen = 'Opening Telegram proxy channel.'
         tgProxyChannelAsk = 'Open Telegram and go to the proxy channel?'
@@ -320,8 +333,16 @@ $script:T = @{
         dnsRestoreStart = 'Restoring DNS saved before repair.'
         dnsRestoreDone = 'DNS restore started. Restart the browser, then run the site check again.'
         dnsRestoreMissing = 'Saved DNS was not found. Use Repair DNS first or configure DNS manually.'
-        tgAppFixStart = 'Opening Telegram Desktop and MTProxy. If Telegram is not installed, the download page will open.'
-        tgAppFixDone = 'If Telegram Desktop is installed, confirm proxy connection in Telegram.'
+        tgAppFixStart = 'Start local Telegram proxy and open it in Telegram?'
+        tgAppFixDone = 'Local Telegram proxy is running. If Telegram asks, confirm proxy connection.'
+        tgProxyMissing = 'TG WS Proxy was not found'
+        tgProxyStarting = 'Starting local TG WS Proxy.'
+        tgProxyRunning = 'TG WS Proxy is already running.'
+        tgProxyReady = 'TG WS Proxy is listening on 127.0.0.1'
+        tgProxyNotReady = 'TG WS Proxy started, but the port is not responding yet. Wait a few seconds and try again.'
+        tgProxyPortBusy = 'TG proxy port is already used by another app'
+        tgProxyStopped = 'TG WS Proxy stopped.'
+        tgProxyLinkCopied = 'Local Telegram proxy link copied to clipboard.'
         extraStart = 'Starting additional tools.'
         safeTest = 'Run Tests: starting built-in check.'
         builtinTest = 'Run Tests: starting built-in network check.'
@@ -941,6 +962,16 @@ $entries = @(
     '57.144.68.141 www.messenger.com',
     '149.154.167.99 telegram.org',
     '149.154.167.99 web.telegram.org',
+    '149.154.174.200 kws1.web.telegram.org',
+    '149.154.174.200 kws1-1.web.telegram.org',
+    '149.154.167.99 kws2.web.telegram.org',
+    '149.154.167.99 kws2-1.web.telegram.org',
+    '149.154.174.200 kws3.web.telegram.org',
+    '149.154.174.200 kws3-1.web.telegram.org',
+    '149.154.167.99 kws4.web.telegram.org',
+    '149.154.167.99 kws4-1.web.telegram.org',
+    '149.154.171.5 kws5.web.telegram.org',
+    '149.154.171.5 kws5-1.web.telegram.org',
     '149.154.174.200 zws1.web.telegram.org',
     '149.154.167.99 zws2.web.telegram.org',
     '149.154.174.200 zws3.web.telegram.org',
@@ -1063,15 +1094,222 @@ if (Test-Path -LiteralPath $BackupFile) {
     }
 }
 
+function Get-TgWsProxyExe {
+    return (Join-Path $Root 'tools\tg-ws-proxy\TgWsProxy_windows.exe')
+}
+
+function Get-TgWsProxyAppDir {
+    return (Join-Path $env:APPDATA 'TgWsProxy')
+}
+
+function Set-TgProxyWindowsStartup {
+    param([bool]$Enabled)
+    $runKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
+    $name = 'AzapretTGProxy'
+    try {
+        if ($Enabled) {
+            $starter = Join-Path $Root 'Start-TG-Proxy.ps1'
+            if (-not (Test-Path -LiteralPath $starter)) { return $false }
+            Set-ItemProperty -Path $runKey -Name $name -Value ('powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "' + $starter + '"')
+        } else {
+            Remove-ItemProperty -Path $runKey -Name $name -ErrorAction SilentlyContinue
+        }
+        return $true
+    } catch {
+        Add-Log ((Tr 'adminFailed') + ": $($_.Exception.Message)") ([System.Drawing.Color]::FromArgb(248, 113, 113)) $true
+        return $false
+    }
+}
+
+function Get-TgWsProxyConfigPath {
+    return (Join-Path (Get-TgWsProxyAppDir) 'config.json')
+}
+
+function Sync-TgProxySecretFromConfig {
+    $configPath = Get-TgWsProxyConfigPath
+    if (-not (Test-Path -LiteralPath $configPath)) { return $false }
+    try {
+        $cfg = Get-Content -LiteralPath $configPath -Raw -Encoding UTF8 | ConvertFrom-Json
+        $cfgSecret = [string]$cfg.secret
+        if ($cfgSecret -match '^[0-9a-fA-F]{32}$') {
+            $script:Settings.tgProxySecret = $cfgSecret.ToLowerInvariant()
+            Save-Settings -Silent $true
+            return $true
+        }
+    } catch {}
+    return $false
+}
+
+function Get-TgProxySecret {
+    $secret = [string]$script:Settings.tgProxySecret
+    if ($secret -match '^[0-9a-fA-F]{32}$') { return $secret.ToLowerInvariant() }
+    if (Sync-TgProxySecretFromConfig) { return $script:Settings.tgProxySecret }
+    $bytes = New-Object byte[] 16
+    [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+    $secret = -join ($bytes | ForEach-Object { $_.ToString('x2') })
+    $script:Settings.tgProxySecret = $secret
+    Save-Settings -Silent $true
+    return $secret
+}
+
+function Get-TgProxyPort {
+    $port = 1443
+    try { $port = [int]$script:Settings.tgProxyPort } catch { $port = 1443 }
+    if ($port -lt 1 -or $port -gt 65535) { $port = 1443 }
+    return $port
+}
+
+function Get-TgProxyPortCandidates {
+    $ports = New-Object System.Collections.Generic.List[int]
+    $ports.Add((Get-TgProxyPort))
+    foreach ($fallback in @(1443, 2443, 3443, 8443, 9443, 10443)) {
+        if (-not $ports.Contains([int]$fallback)) { $ports.Add([int]$fallback) }
+    }
+    return @($ports)
+}
+
+function Set-TgProxyPort {
+    param([int]$Port)
+    if ($Port -lt 1 -or $Port -gt 65535) { $Port = 1443 }
+    $script:Settings.tgProxyPort = $Port
+    Save-Settings -Silent $true
+}
+
+function Get-AvailableTgProxyPort {
+    foreach ($port in (Get-TgProxyPortCandidates)) {
+        if (-not (Test-TcpPortLocal -Port $port)) { return [int]$port }
+    }
+    return 0
+}
+
+function Get-TgProxyUrl {
+    $port = Get-TgProxyPort
+    $secret = Get-TgProxySecret
+    return "tg://proxy?server=127.0.0.1&port=$port&secret=dd$secret"
+}
+
+function Test-TcpPortLocal {
+    param([int]$Port)
+    $client = $null
+    try {
+        $client = New-Object System.Net.Sockets.TcpClient
+        $iar = $client.BeginConnect('127.0.0.1', $Port, $null, $null)
+        if (-not $iar.AsyncWaitHandle.WaitOne(900, $false)) { return $false }
+        $client.EndConnect($iar)
+        return $true
+    } catch {
+        return $false
+    } finally {
+        if ($client) { $client.Close() }
+    }
+}
+
+function Get-TgWsProxyProcesses {
+    $exe = (Get-TgWsProxyExe).ToLowerInvariant()
+    try {
+        return @(Get-CimInstance Win32_Process -Filter "name = 'TgWsProxy_windows.exe' OR name = 'TgWsProxy.exe'" -ErrorAction SilentlyContinue |
+            Where-Object {
+                $path = [string]$_.ExecutablePath
+                $cmd = [string]$_.CommandLine
+                ($path -and $path.ToLowerInvariant() -eq $exe) -or ($cmd -and $cmd.ToLowerInvariant().Contains($exe))
+            })
+    } catch {
+        return @()
+    }
+}
+
+function Write-TgWsProxyConfig {
+    $appDir = Get-TgWsProxyAppDir
+    if (-not (Test-Path -LiteralPath $appDir)) { New-Item -ItemType Directory -Path $appDir -Force | Out-Null }
+    $configPath = Get-TgWsProxyConfigPath
+    $config = [ordered]@{
+        host = '127.0.0.1'
+        port = Get-TgProxyPort
+        secret = Get-TgProxySecret
+        dc_ip = @('2:149.154.167.220', '4:149.154.167.220')
+        verbose = $false
+        buf_kb = 256
+        pool_size = 4
+        log_max_mb = 5.0
+        check_updates = $false
+        cfproxy = $true
+        cfproxy_user_domain = @()
+        cfproxy_worker_domain = @()
+        appearance = 'auto'
+        autostart = [bool]$script:Settings.tgProxyAutostart
+    }
+    [System.IO.File]::WriteAllText($configPath, ($config | ConvertTo-Json -Depth 5), (New-Object System.Text.UTF8Encoding($false)))
+    New-Item -ItemType File -Path (Join-Path $appDir '.first_run_done_mtproto') -Force | Out-Null
+    New-Item -ItemType File -Path (Join-Path $appDir '.ipv6_warned') -Force | Out-Null
+    return $configPath
+}
+
+function Start-LocalTelegramProxy {
+    $exe = Get-TgWsProxyExe
+    if (-not (Test-Path -LiteralPath $exe)) {
+        Add-Log ((Tr 'tgProxyMissing') + ": $exe") ([System.Drawing.Color]::FromArgb(248, 113, 113)) $true
+        return $false
+    }
+    $currentPort = Get-TgProxyPort
+
+    if (@(Get-TgWsProxyProcesses).Count -gt 0) {
+        Stop-LocalTelegramProxy
+        for ($i = 0; $i -lt 20 -and (Test-TcpPortLocal -Port $currentPort); $i++) { Start-Sleep -Milliseconds 250 }
+    }
+
+    $port = Get-AvailableTgProxyPort
+    if ($port -eq 0) {
+        Add-Log ((Tr 'tgProxyPortBusy') + ": " + ((Get-TgProxyPortCandidates) -join ', ')) ([System.Drawing.Color]::FromArgb(248, 113, 113)) $true
+        return $false
+    }
+    if ($port -ne $currentPort) { Add-Log ((Tr 'tgProxyPortBusy') + ": $currentPort -> 127.0.0.1:$port") }
+    Set-TgProxyPort -Port $port
+
+    Write-TgWsProxyConfig | Out-Null
+    Add-Log (Tr 'tgProxyStarting')
+    try {
+        Start-Process -FilePath $exe -WorkingDirectory (Split-Path -Parent $exe) -WindowStyle Hidden | Out-Null
+    } catch {
+        Add-Log ((Tr 'adminFailed') + ": $($_.Exception.Message)") ([System.Drawing.Color]::FromArgb(248, 113, 113)) $true
+        return $false
+    }
+    for ($i = 0; $i -lt 20 -and -not (Test-TcpPortLocal -Port $port); $i++) { Start-Sleep -Milliseconds 250 }
+    if (Test-TcpPortLocal -Port $port) {
+        Sync-TgProxySecretFromConfig | Out-Null
+        $script:Settings.tgProxyAutostart = $true
+        Save-Settings -Silent $true
+        Set-TgProxyWindowsStartup -Enabled $true | Out-Null
+        Write-TgWsProxyConfig | Out-Null
+        Add-SuccessLog ((Tr 'tgProxyReady') + ":$port")
+        return $true
+    }
+    Add-Log (Tr 'tgProxyNotReady') ([System.Drawing.Color]::FromArgb(250, 204, 21)) $true
+    return $false
+}
+
+function Stop-LocalTelegramProxy {
+    $procs = @(Get-TgWsProxyProcesses)
+    foreach ($proc in $procs) {
+        try { Stop-Process -Id ([int]$proc.ProcessId) -Force -ErrorAction SilentlyContinue } catch {}
+    }
+    $script:Settings.tgProxyAutostart = $false
+    Save-Settings -Silent $true
+    Set-TgProxyWindowsStartup -Enabled $false | Out-Null
+    Write-TgWsProxyConfig | Out-Null
+    Add-SuccessLog (Tr 'tgProxyStopped')
+}
+
 function Invoke-TelegramAppFix {
     if (-not (Show-DarkConfirm -Message (Tr 'tgAppFixStart'))) { return }
-    $server = 'i-love-femboys.top'
-    $port = '853'
-    $secret = 'ee54ce330e4690cc297d2b031ff3f288b06d742e616b656e61692e636c69636b'
-    $webProxyUrl = "https://t.me/proxy?server=$server&port=$port&secret=$secret"
-    $proxyUrl = "tg://proxy?server=$server&port=$port&secret=$secret"
-    try { [System.Windows.Forms.Clipboard]::SetText($webProxyUrl) } catch {}
-    Add-Log ("Telegram proxy URL: $webProxyUrl")
+    if (-not (Start-LocalTelegramProxy)) { return }
+    Sync-TgProxySecretFromConfig | Out-Null
+    $proxyUrl = Get-TgProxyUrl
+    $webProxyUrl = $proxyUrl.Replace('tg://proxy', 'https://t.me/proxy')
+    try {
+        [System.Windows.Forms.Clipboard]::SetText($webProxyUrl)
+        Add-SuccessLog (Tr 'tgProxyLinkCopied')
+    } catch {}
+    Add-Log ("Telegram local proxy URL: $webProxyUrl")
     try { Start-Process $proxyUrl } catch { Add-Log ((Tr 'adminFailed') + ": $($_.Exception.Message)") }
     Add-SuccessLog (Tr 'tgAppFixDone')
 }
@@ -2251,6 +2489,7 @@ function Run-Action {
         'dnsRepair' { Repair-SystemDns }
         'dnsRestore' { Restore-SystemDns }
         'tgAppFix' { Invoke-TelegramAppFix }
+        'tgStopProxy' { Stop-LocalTelegramProxy }
         'tgProxyChannel' { Show-TelegramProxyChannelPopup }
         'tgDownload' { Open-TelegramDownload }
         'clearCache' {
@@ -3165,7 +3404,8 @@ $tgCard.Controls.Add($tgTitle)
 $tgActions = @(
     @{ Text = 'tgAppFix'; Action = 'tgAppFix' },
     @{ Text = 'tgProxyChannel'; Action = 'tgProxyChannel' },
-    @{ Text = 'tgDownload'; Action = 'tgDownload' }
+    @{ Text = 'tgDownload'; Action = 'tgDownload' },
+    @{ Text = 'tgStopProxy'; Action = 'tgStopProxy' }
 )
 $tgX = 20
 $tgY = 62
@@ -3176,6 +3416,7 @@ foreach ($action in $tgActions) {
     $script:ActionButtons[$textKey] = $button
     $tgCard.Controls.Add($button)
     $tgX += 220
+    if ($tgX -gt 460) { $tgX = 20; $tgY += 52 }
 }
 
 $serviceCard = New-Card -X 4 -Y 20 -W 700 -H 520
